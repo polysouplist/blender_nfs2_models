@@ -80,7 +80,7 @@ def import_nfs2_models(context, file_path, clear_scene, m):
 			num_vrtx = struct.unpack('<I', f.read(0x4))[0]
 			num_plgn = struct.unpack('<I', f.read(0x4))[0]
 			pos = struct.unpack('<3i', f.read(0xC))
-			pos = [pos[0]/0x7FFF, pos[1]/0x7FFF, pos[2]/0x7FFF]
+			pos = [pos[0]/65536, pos[1]/65536, pos[2]/65536]
 			
 			object_unk0 = struct.unpack('<I', f.read(0x4))[0]
 			object_unk1 = struct.unpack('<I', f.read(0x4))[0]
@@ -90,7 +90,7 @@ def import_nfs2_models(context, file_path, clear_scene, m):
 			
 			for i in range (num_vrtx):
 				vertex = struct.unpack('<3h', f.read(0x6))
-				vertex = [vertex[0]/0x7F, vertex[1]/0x7F, vertex[2]/0x7F]
+				vertex = [vertex[0]/256, vertex[1]/256, vertex[2]/256]
 				vertices.append ((vertex[0], vertex[1], vertex[2]))
 			if num_vrtx % 2 == 1:	#Data offset, happens when num_vrtx is odd
 				padding = f.read(0x6)
@@ -123,8 +123,8 @@ def import_nfs2_models(context, file_path, clear_scene, m):
 				double_sided = (bm.faces.layers.int.get("double_sided") or bm.faces.layers.int.new("double_sided"))
 				unknown_4 = (bm.faces.layers.int.get("unknown_4") or bm.faces.layers.int.new("unknown_4"))
 				unknown_5 = (bm.faces.layers.int.get("unknown_5") or bm.faces.layers.int.new("unknown_5"))
-				unknown_6 = (bm.faces.layers.int.get("unknown_6") or bm.faces.layers.int.new("unknown_6"))
-				unknown_7 = (bm.faces.layers.int.get("unknown_7") or bm.faces.layers.int.new("unknown_7"))
+				brake_light = (bm.faces.layers.int.get("brake_light") or bm.faces.layers.int.new("brake_light"))
+				is_wheel = (bm.faces.layers.int.get("is_wheel") or bm.faces.layers.int.new("is_wheel"))
 				
 				BMVert_dictionary = {}
 				
@@ -163,8 +163,8 @@ def import_nfs2_models(context, file_path, clear_scene, m):
 					BMFace[double_sided] = mapping[3][1]
 					BMFace[unknown_4] = mapping[4][1]
 					BMFace[unknown_5] = mapping[5][1]
-					BMFace[unknown_6] = mapping[6][1]
-					BMFace[unknown_7] = mapping[7][1]
+					BMFace[brake_light] = mapping[6][1]
+					BMFace[is_wheel] = mapping[7][1]
 					
 					material_name = str(texture_name, 'ascii')
 					mat = bpy.data.materials.get(material_name)
@@ -274,8 +274,8 @@ def mapping_decode(mapping, endian):
 		"double_sided",			# Bit 3
 		"unknown_4",			# Bit 4
 		"unknown_5",			# Bit 5
-		"unknown_6",			# Bit 6
-		"unknown_7"				# Bit 7
+		"brake_light",			# Bit 6
+		"is_wheel"				# Bit 7
 	]
 	
 	# Extracting each mapping's state
