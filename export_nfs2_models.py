@@ -100,9 +100,9 @@ def main(context, export_path, game_version, m):
 					num_plgn = len(mesh.polygons)
 					pos = Matrix(np.linalg.inv(m) @ object.matrix_world)
 					pos = pos.to_translation()
-					pos = [round(pos[0]*0x7FFF),
-						   round(pos[1]*0x7FFF),
-						   round(pos[2]*0x7FFF)]
+					pos = [round(pos[0]*65536),
+						   round(pos[1]*65536),
+						   round(pos[2]*65536)]
 					
 					f.write(struct.pack('<I', num_vrtx))
 					f.write(struct.pack('<I', num_plgn))
@@ -127,9 +127,9 @@ def main(context, export_path, game_version, m):
 					f.write(struct.pack('<Q', object_unk4))
 					
 					for vert in mesh.vertices:
-						vertices = [round(vert.co[0]*0x7F),
-									round(vert.co[1]*0x7F),
-									round(vert.co[2]*0x7F)]
+						vertices = [round(vert.co[0]*256),
+									round(vert.co[1]*256),
+									round(vert.co[2]*256)]
 						f.write(struct.pack('<3h', *vertices))
 					if len(mesh.vertices) % 2 == 1:	#Data offset, happens when num_vrtx is odd
 						if game_version == "NFS2":
@@ -144,8 +144,8 @@ def main(context, export_path, game_version, m):
 					double_sided = bm.faces.layers.int.get("double_sided")
 					unknown_4 = bm.faces.layers.int.get("unknown_4")
 					unknown_5 = bm.faces.layers.int.get("unknown_5")
-					unknown_6 = bm.faces.layers.int.get("unknown_6")
-					unknown_7 = bm.faces.layers.int.get("unknown_7")
+					brake_light = bm.faces.layers.int.get("brake_light")
+					is_wheel = bm.faces.layers.int.get("is_wheel")
 					
 					for face in bm.faces:
 						if len(face.verts) > 4 or len(face.verts) < 3:
@@ -166,7 +166,7 @@ def main(context, export_path, game_version, m):
 							else:
 								vertex_indices = [vert[0].index, vert[1].index, vert[2].index, vert[3].index]
 						
-						mapping = [face[is_triangle], face[uv_flip], face[flip_normal], face[double_sided], face[unknown_4], face[unknown_5], face[unknown_6], face[unknown_7]]
+						mapping = [face[is_triangle], face[uv_flip], face[flip_normal], face[double_sided], face[unknown_4], face[unknown_5], face[brake_light], face[is_wheel]]
 						mapping = mapping_encode(mapping, "little")
 						unk0 = face[face_unk0].to_bytes(3, "little")
 						material_name = mesh.materials[face.material_index].name
@@ -199,7 +199,7 @@ def mapping_encode(mapping, endian):
 	mapping_value = 0
 	mapping_names = [
 	"is_triangle", "uv_flip", "flip_normal", "double_sided",
-	"unknown_4", "unknown_5", "unknown_6", "unknown_7"
+	"unknown_4", "unknown_5", "brake_light", "is_wheel"
 	]
 	
 	# Set the corresponding mapping bits
