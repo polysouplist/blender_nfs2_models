@@ -65,8 +65,8 @@ class MappingPanel(bpy.types.Panel):
 			f4 = me.polygon_layers_int.get("double_sided") or me.polygon_layers_int.new(name="double_sided")
 			f5 = me.polygon_layers_int.get("unknown_4") or me.polygon_layers_int.new(name="unknown_4")
 			f6 = me.polygon_layers_int.get("unknown_5") or me.polygon_layers_int.new(name="unknown_5")
-			f7 = me.polygon_layers_int.get("unknown_6") or me.polygon_layers_int.new(name="unknown_6")
-			f8 = me.polygon_layers_int.get("unknown_7") or me.polygon_layers_int.new(name="unknown_7")
+			f7 = me.polygon_layers_int.get("brake_light") or me.polygon_layers_int.new(name="brake_light")
+			f8 = me.polygon_layers_int.get("is_wheel") or me.polygon_layers_int.new(name="is_wheel")
 			
 			if not False in [f1, f2, f3, f4, f5, f6, f7, f8]:
 				cls.ebm.setdefault(me.name, bmesh.from_edit_mesh(me))
@@ -86,8 +86,8 @@ class MappingPanel(bpy.types.Panel):
 		box.prop(me, "double_sided")
 		box.prop(me, "unknown_4")
 		box.prop(me, "unknown_5")
-		box.prop(me, "unknown_6")
-		box.prop(me, "unknown_7")
+		box.prop(me, "brake_light")
+		box.prop(me, "is_wheel")
 
 
 def set_int_face_unk0(self, value):
@@ -194,11 +194,11 @@ def set_int_unknown_5(self, value):
 			bmesh.update_edit_mesh(self)
 
 
-def set_int_unknown_6(self, value):
+def set_int_brake_light(self, value):
 	bm = MappingPanel.ebm.setdefault(self.name, bmesh.from_edit_mesh(self))
 
 	# get the mapping layer
-	mapping = (bm.faces.layers.int.get("unknown_6") or bm.faces.layers.int.new("unknown_6"))
+	mapping = (bm.faces.layers.int.get("brake_light") or bm.faces.layers.int.new("brake_light"))
 
 	selected_faces = [x for x in bm.faces if x.select]
 	for elem in selected_faces:
@@ -207,11 +207,11 @@ def set_int_unknown_6(self, value):
 			bmesh.update_edit_mesh(self)
 
 
-def set_int_unknown_7(self, value):
+def set_int_is_wheel(self, value):
 	bm = MappingPanel.ebm.setdefault(self.name, bmesh.from_edit_mesh(self))
 
 	# get the mapping layer
-	mapping = (bm.faces.layers.int.get("unknown_7") or bm.faces.layers.int.new("unknown_7"))
+	mapping = (bm.faces.layers.int.get("is_wheel") or bm.faces.layers.int.new("is_wheel"))
 
 	selected_faces = [x for x in bm.faces if x.select]
 	for elem in selected_faces:
@@ -292,9 +292,9 @@ def get_int_unknown_5(self):
 	return 0
 
 
-def get_int_unknown_6(self):
+def get_int_brake_light(self):
 	bm = MappingPanel.ebm.setdefault(self.name, bmesh.from_edit_mesh(self))
-	flag = bm.faces.layers.int.get("unknown_6") or bm.faces.layers.int.new("unknown_6")
+	flag = bm.faces.layers.int.get("brake_light") or bm.faces.layers.int.new("brake_light")
 
 	selected_faces = [x for x in bm.faces if x.select]
 	for elem in selected_faces:
@@ -304,9 +304,9 @@ def get_int_unknown_6(self):
 	return 0
 
 
-def get_int_unknown_7(self):
+def get_int_is_wheel(self):
 	bm = MappingPanel.ebm.setdefault(self.name, bmesh.from_edit_mesh(self))
-	flag = bm.faces.layers.int.get("unknown_7") or bm.faces.layers.int.new("unknown_7")
+	flag = bm.faces.layers.int.get("is_wheel") or bm.faces.layers.int.new("is_wheel")
 
 	selected_faces = [x for x in bm.faces if x.select]
 	for elem in selected_faces:
@@ -328,8 +328,8 @@ def register():
 	bpy.types.Mesh.double_sided = bpy.props.BoolProperty(name="double_sided", description="Double sided?", default=False, get=get_int_double_sided, set=set_int_double_sided)
 	bpy.types.Mesh.unknown_4 = bpy.props.BoolProperty(name="unknown_4", description="Unknown 4?", default=False, get=get_int_unknown_4, set=set_int_unknown_4)
 	bpy.types.Mesh.unknown_5 = bpy.props.BoolProperty(name="unknown_5", description="Unknown 5?", default=False, get=get_int_unknown_5, set=set_int_unknown_5)
-	bpy.types.Mesh.unknown_6 = bpy.props.BoolProperty(name="unknown_6", description="Unknown 6?", default=False, get=get_int_unknown_6, set=set_int_unknown_6)
-	bpy.types.Mesh.unknown_7 = bpy.props.BoolProperty(name="unknown_7", description="Unknown 7?", default=False, get=get_int_unknown_7, set=set_int_unknown_7)
+	bpy.types.Mesh.brake_light = bpy.props.BoolProperty(name="brake_light", description="Brake light?", default=False, get=get_int_brake_light, set=set_int_brake_light)
+	bpy.types.Mesh.is_wheel = bpy.props.BoolProperty(name="is_wheel", description="Is wheel?", default=False, get=get_int_is_wheel, set=set_int_is_wheel)
 
 
 def unregister():
@@ -344,8 +344,8 @@ def unregister():
 	delattr(bpy.types.Mesh, "double_sided")
 	delattr(bpy.types.Mesh, "unknown_4")
 	delattr(bpy.types.Mesh, "unknown_5")
-	delattr(bpy.types.Mesh, "unknown_6")
-	delattr(bpy.types.Mesh, "unknown_7")
+	delattr(bpy.types.Mesh, "brake_light")
+	delattr(bpy.types.Mesh, "is_wheel")
 
 
 CLASSES = [FaceUnk0Panel, MappingPanel]
