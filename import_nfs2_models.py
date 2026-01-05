@@ -75,6 +75,7 @@ def import_nfs2_models(context, file_path, clear_scene, m):
 		for index in range(32):
 			vertices = []
 			faces = []
+			additional_data = []
 			
 			geoPartName = get_geoPartNames(index)
 			num_vrtx = struct.unpack('<I', f.read(0x4))[0]
@@ -93,7 +94,7 @@ def import_nfs2_models(context, file_path, clear_scene, m):
 				vertex = [vertex[0]/256, vertex[1]/256, vertex[2]/256]
 				vertices.append ((vertex[0], vertex[1], vertex[2]))
 			if num_vrtx % 2 == 1:	#Data offset, happens when num_vrtx is odd
-				padding = f.read(0x6)
+				additional_data = f.read(0x6)
 			
 			for i in range(num_plgn):
 				mapping = f.read(0x1)
@@ -191,6 +192,8 @@ def import_nfs2_models(context, file_path, clear_scene, m):
 				bm.to_mesh(me_ob)
 				bm.free()
 				
+				if additional_data:
+					me_ob["additional_data"] = additional_data
 				obj["object_index"] = index
 				obj["object_unk0"] = int_to_id(object_unk0)
 				obj["object_unk1"] = int_to_id(object_unk1)
