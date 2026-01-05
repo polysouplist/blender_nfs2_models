@@ -97,10 +97,8 @@ def import_nfs2_models(context, file_path, clear_scene, m):
 				additional_data = f.read(0x6)
 			
 			for i in range(num_plgn):
-				mapping = f.read(0x1)
-				mapping = mapping_decode(mapping, "little")
-				unk0 = f.read(0x3)
-				unk0 = int.from_bytes(unk0, "little")  
+				mapping = mapping_decode(f.read(0x1), "little")
+				unk0 = int.from_bytes(f.read(0x3), "little")  
 				vertex_indices = struct.unpack('<4B', f.read(0x4))
 				texture_name = f.read(0x4)
 				
