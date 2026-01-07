@@ -64,18 +64,25 @@ def main(context, export_path, game_version, m):
 		object_index = -1
 		
 		with open(file_path, "wb") as f:
-			if "header_unk0" in main_collection:
+			try:
 				header_unk0 = main_collection["header_unk0"]
-				f.write(struct.pack('<I', header_unk0))
-			else:
-				f.write(b'\x00' * 0x4)
-			if "header_unk1" in main_collection:
-				header_unk1 = [id_to_int(i) for i in main_collection["header_unk1"]]
-				f.write(struct.pack('<32I', *header_unk1))
-			else:
-				f.write(b'\x00' * 0x80)
+			except:
+				print("WARNING: collection %s is missing parameter %s. Assuming some value (0)." % (main_collection.name, '"header_unk0"'))
+				header_unk0 = 0
+			try:
+				if len(main_collection["header_unk1"]) == 32:
+					header_unk1 = [id_to_int(i) for i in main_collection["header_unk1"]]
+				else:
+					print("ERROR: collection %s has invalid parameter %s. It should be an array of 32 items." % (main_collection.name, '"header_unk1"'))
+					return {"CANCELLED"}
+			except:
+				print("WARNING: collection %s is missing parameter %s. Assuming some value (0)." % (main_collection.name, '"header_unk1"'))
+				header_unk1 = [0 for _ in range(32)]
 			
 			header_unk2 = 0	#Always == 0x0
+			
+			f.write(struct.pack('<I', header_unk0))
+			f.write(struct.pack('<32I', *header_unk1))
 			f.write(struct.pack('<Q', header_unk2))
 			
 			object_by_index = {}
@@ -103,25 +110,26 @@ def main(context, export_path, game_version, m):
 					pos = [round(pos[0]*65536),
 						   round(pos[1]*65536),
 						   round(pos[2]*65536)]
-					
-					f.write(struct.pack('<I', num_vrtx))
-					f.write(struct.pack('<I', num_plgn))
-					f.write(struct.pack('<3i', *pos))
-					
 					try:
 						object_unk0 = id_to_int(object["object_unk0"])
-						f.write(struct.pack('<I', object_unk0))
 					except:
-						f.write(b'\x00' * 0x4)
+						print("WARNING: object %s is missing parameter %s. Assuming some value (0)." % (object.name, '"object_unk0"'))
+						object_unk0 = 0
 					try:
 						object_unk1 = id_to_int(object["object_unk1"])
-						f.write(struct.pack('<I', object_unk1))
 					except:
-						f.write(b'\x00' * 0x4)
+						print("WARNING: object %s is missing parameter %s. Assuming some value (0)." % (object.name, '"object_unk1"'))
+						object_unk1 = 0
 					
 					object_unk2 = 0	#Always == 0x0
 					object_unk3 = 1	#Always == 0x1
 					object_unk4 = 1	#Always == 0x1
+					
+					f.write(struct.pack('<I', num_vrtx))
+					f.write(struct.pack('<I', num_plgn))
+					f.write(struct.pack('<3i', *pos))
+					f.write(struct.pack('<I', object_unk0))
+					f.write(struct.pack('<I', object_unk1))
 					f.write(struct.pack('<Q', object_unk2))
 					f.write(struct.pack('<Q', object_unk3))
 					f.write(struct.pack('<Q', object_unk4))
