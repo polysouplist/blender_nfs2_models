@@ -98,18 +98,22 @@ def main(context, export_path, game_version, m):
 				if index in object_by_index:
 					object = object_by_index[index]
 					
+					num_vrtx = 0
+					vertices = []
+					num_plgn = 0
+					polygons = []
+					
 					# Inits
 					mesh = object.data
 					bm = bmesh.new()
 					bm.from_mesh(mesh)
 					
-					num_vrtx = len(mesh.vertices)
-					num_plgn = len(mesh.polygons)
+					pos_scale = 65536
 					pos = Matrix(np.linalg.inv(m) @ object.matrix_world)
 					pos = pos.to_translation()
-					pos = [round(pos[0]*65536),
-						   round(pos[1]*65536),
-						   round(pos[2]*65536)]
+					pos = [round(pos[0]*pos_scale),
+						   round(pos[1]*pos_scale),
+						   round(pos[2]*pos_scale)]
 					try:
 						object_unk0 = id_to_int(object["object_unk0"])
 					except:
@@ -125,25 +129,11 @@ def main(context, export_path, game_version, m):
 					object_unk3 = 1	#Always == 0x1
 					object_unk4 = 1	#Always == 0x1
 					
-					f.write(struct.pack('<I', num_vrtx))
-					f.write(struct.pack('<I', num_plgn))
-					f.write(struct.pack('<3i', *pos))
-					f.write(struct.pack('<I', object_unk0))
-					f.write(struct.pack('<I', object_unk1))
-					f.write(struct.pack('<Q', object_unk2))
-					f.write(struct.pack('<Q', object_unk3))
-					f.write(struct.pack('<Q', object_unk4))
-					
-					for vert in mesh.vertices:
-						vertices = [round(vert.co[0]*256),
-									round(vert.co[1]*256),
-									round(vert.co[2]*256)]
-						f.write(struct.pack('<3h', *vertices))
-					if len(mesh.vertices) % 2 == 1:	#Data offset, happens when num_vrtx is odd
-						if game_version == "NFS2":
-							f.write(b'\x42\x45\x4E\x44' + b'\x00' * 0x2)
-						else:
-							f.write(b'\x00' * 0x6)
+					vert_scale = 256
+					for vert in bm.verts:
+						if vert.hide == False:
+							vertices.append([round(vert_co*vert_scale) for i, vert_co in enumerate(vert.co)])
+							num_vrtx += 1
 					
 					face_unk0 = bm.faces.layers.int.get("face_unk0")
 					is_triangle = bm.faces.layers.int.get("is_triangle")
@@ -156,36 +146,64 @@ def main(context, export_path, game_version, m):
 					is_wheel = bm.faces.layers.int.get("is_wheel")
 					
 					for face in bm.faces:
-						if len(face.verts) > 4 or len(face.verts) < 3:
-							print("ERROR: non triangular or quad face on mesh %s." % mesh.name)
-							return {"CANCELLED"}
-						if len(face.verts) == 3:
-							face[is_triangle] = 1
-							vert = face.verts
-							if face[flip_normal] == 1:
-								vertex_indices = [vert[0].index, vert[2].index, vert[1].index, vert[1].index]
-							else:
-								vertex_indices = [vert[0].index, vert[1].index, vert[2].index, vert[2].index]
-						elif len(face.verts) == 4:
-							face[is_triangle] = 0
-							vert = face.verts
-							if face[flip_normal] == 1:
-								vertex_indices = [vert[0].index, vert[3].index, vert[2].index, vert[1].index]
-							else:
-								vertex_indices = [vert[0].index, vert[1].index, vert[2].index, vert[3].index]
-						
-						mapping = [face[is_triangle], face[uv_flip], face[flip_normal], face[double_sided], face[unknown_4], face[unknown_5], face[brake_light], face[is_wheel]]
-						mapping = mapping_encode(mapping, "little")
-						unk0 = face[face_unk0].to_bytes(3, "little")
-						material_name = mesh.materials[face.material_index].name
-						texture_name = material_name[:4]
-						f.write(mapping)
-						f.write(unk0)
-						f.write(struct.pack('<4B', *vertex_indices))
-						f.write(texture_name.encode('ascii'))
+						if face.hide == False:
+							if len(face.verts) > 4 or len(face.verts) < 3:
+								print("ERROR: non triangular or quad face on mesh %s." % mesh.name)
+								return {"CANCELLED"}
+							if len(face.verts) == 3:
+								face[is_triangle] = True
+								vert = face.verts
+								if face[flip_normal] == 1:
+									vertex_indices = [vert[0].index, vert[2].index, vert[1].index, vert[1].index]
+								else:
+									vertex_indices = [vert[0].index, vert[1].index, vert[2].index, vert[2].index]
+							elif len(face.verts) == 4:
+								face[is_triangle] = False
+								vert = face.verts
+								if face[flip_normal] == 1:
+									vertex_indices = [vert[0].index, vert[3].index, vert[2].index, vert[1].index]
+								else:
+									vertex_indices = [vert[0].index, vert[1].index, vert[2].index, vert[3].index]
+							
+							mapping = [face[is_triangle], face[uv_flip], face[flip_normal], face[double_sided], face[unknown_4], face[unknown_5], face[brake_light], face[is_wheel]]
+							mapping = mapping_encode(mapping, "little")
+							try:
+								unk0 = face[face_unk0].to_bytes(3, "little")
+							except:
+								unk0 = (0).to_bytes(3, "little")
+							material_name = mesh.materials[face.material_index].name
+							texture_name = (material_name[:4].encode('ascii'))
+							
+							polygons.append([mapping, unk0, vertex_indices, texture_name])
+							num_plgn += 1
 					
 					bm.clear()
 					bm.free()
+					
+					f.write(struct.pack('<I', num_vrtx))
+					f.write(struct.pack('<I', num_plgn))
+					f.write(struct.pack('<3i', *pos))
+					f.write(struct.pack('<I', object_unk0))
+					f.write(struct.pack('<I', object_unk1))
+					f.write(struct.pack('<Q', object_unk2))
+					f.write(struct.pack('<Q', object_unk3))
+					f.write(struct.pack('<Q', object_unk4))
+					
+					for i in range(0, num_vrtx):
+						f.write(struct.pack('<3h', *vertices[i]))
+					if len(vertices) % 2 == 1:	#Data offset, happens when num_vrtx is odd
+						if game_version == "NFS2":
+							f.write(b'\x42\x45\x4E\x44' + b'\x00' * 0x2)
+						else:
+							f.write(struct.pack('<3h', 0, 0, 0))
+					
+					for i in range(0, num_plgn):
+						mapping, unk0, vertex_indices, texture_name = polygons[i]
+						f.write(mapping)
+						f.write(unk0)
+						f.write(struct.pack('<4B', *vertex_indices))
+						f.write(texture_name)
+				
 				else:
 					f.write(struct.pack('<I', 0))
 					f.write(struct.pack('<I', 0))
