@@ -191,8 +191,8 @@ def main(context, export_path, game_version, m):
 					
 					for i in range(0, num_vrtx):
 						f.write(struct.pack('<3h', *vertices[i]))
-					if len(vertices) % 2 == 1:	#Data offset, happens when num_vrtx is odd
-						if game_version == "NFS2":
+					if num_vrtx % 2 == 1:	#Data offset, happens when num_vrtx is odd
+						if game_version == 'OPT_A':
 							f.write(b'\x42\x45\x4E\x44' + b'\x00' * 0x2)
 						else:
 							f.write(struct.pack('<3h', 0, 0, 0))
