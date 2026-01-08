@@ -70,11 +70,7 @@ def main(context, export_path, game_version, m):
 				print("WARNING: collection %s is missing parameter %s. Assuming some value (0)." % (main_collection.name, '"header_unk0"'))
 				header_unk0 = 0
 			try:
-				if len(main_collection["header_unk1"]) == 32:
-					header_unk1 = [id_to_int(i) for i in main_collection["header_unk1"]]
-				else:
-					print("ERROR: collection %s has invalid parameter %s. It should be an array of 32 items." % (main_collection.name, '"header_unk1"'))
-					return {"CANCELLED"}
+				header_unk1 = [id_to_int(i) for i in main_collection["header_unk1"]]
 			except:
 				print("WARNING: collection %s is missing parameter %s. Assuming some value (0)." % (main_collection.name, '"header_unk1"'))
 				header_unk1 = [0 for _ in range(32)]
@@ -83,7 +79,11 @@ def main(context, export_path, game_version, m):
 			
 			# Writing header
 			f.write(struct.pack('<I', header_unk0))
-			f.write(struct.pack('<32I', *header_unk1))
+			for i in range(32):
+				try:
+					f.write(struct.pack('<I', header_unk1[i]))
+				except:
+					f.write(struct.pack('<I', 0))
 			f.write(struct.pack('<Q', header_unk2))
 			
 			object_by_index = {}
