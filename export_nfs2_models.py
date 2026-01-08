@@ -81,6 +81,7 @@ def main(context, export_path, game_version, m):
 			
 			header_unk2 = 0	#Always == 0x0
 			
+			# Writing header
 			f.write(struct.pack('<I', header_unk0))
 			f.write(struct.pack('<32I', *header_unk1))
 			f.write(struct.pack('<Q', header_unk2))
@@ -99,8 +100,8 @@ def main(context, export_path, game_version, m):
 					object = object_by_index[index]
 					
 					num_vrtx = 0
-					vertices = []
 					num_plgn = 0
+					vertices = []
 					polygons = []
 					
 					# Inits
@@ -167,10 +168,20 @@ def main(context, export_path, game_version, m):
 							
 							mapping = [face[is_triangle], face[uv_flip], face[flip_normal], face[double_sided], face[unknown_4], face[unknown_5], face[brake_light], face[is_wheel]]
 							mapping = mapping_encode(mapping, "little")
+							
 							try:
 								unk0 = face[face_unk0].to_bytes(3, "little")
 							except:
 								unk0 = (0).to_bytes(3, "little")
+							
+							try:
+								if mesh.materials[face.material_index] == None:
+									print("ERROR: face without material found on mesh %s." % mesh.name)
+									return {"CANCELLED"}
+							except:
+								print("ERROR: face without material found on mesh %s." % mesh.name)
+								return {"CANCELLED"}
+							
 							material_name = mesh.materials[face.material_index].name
 							texture_name = (material_name[:4].encode('ascii'))
 							
@@ -180,30 +191,40 @@ def main(context, export_path, game_version, m):
 					bm.clear()
 					bm.free()
 					
-					f.write(struct.pack('<I', num_vrtx))
-					f.write(struct.pack('<I', num_plgn))
-					f.write(struct.pack('<3i', *pos))
-					f.write(struct.pack('<I', object_unk0))
-					f.write(struct.pack('<I', object_unk1))
-					f.write(struct.pack('<Q', object_unk2))
-					f.write(struct.pack('<Q', object_unk3))
-					f.write(struct.pack('<Q', object_unk4))
-					
-					for i in range(0, num_vrtx):
-						f.write(struct.pack('<3h', *vertices[i]))
-					if num_vrtx % 2 == 1:	#Data offset, happens when num_vrtx is odd
-						if game_version == 'OPT_A':
-							f.write(b'\x42\x45\x4E\x44' + b'\x00' * 0x2)
-						else:
-							f.write(struct.pack('<3h', 0, 0, 0))
-					
-					for i in range(0, num_plgn):
-						mapping, unk0, vertex_indices, texture_name = polygons[i]
-						f.write(mapping)
-						f.write(unk0)
-						f.write(struct.pack('<4B', *vertex_indices))
-						f.write(texture_name)
-				
+					# Writing body
+					if num_vrtx > 0:
+						f.write(struct.pack('<I', num_vrtx))
+						f.write(struct.pack('<I', num_plgn))
+						f.write(struct.pack('<3i', *pos))
+						f.write(struct.pack('<I', object_unk0))
+						f.write(struct.pack('<I', object_unk1))
+						f.write(struct.pack('<Q', object_unk2))
+						f.write(struct.pack('<Q', object_unk3))
+						f.write(struct.pack('<Q', object_unk4))
+						
+						for i in range(0, num_vrtx):
+							f.write(struct.pack('<3h', *vertices[i]))
+						if num_vrtx % 2 == 1:	#Data offset, happens when num_vrtx is odd
+							if game_version == 'OPT_A':
+								f.write(b'\x42\x45\x4E\x44' + b'\x00' * 0x2)
+							else:
+								f.write(struct.pack('<3h', 0, 0, 0))
+						
+						for i in range(0, num_plgn):
+							mapping, unk0, vertex_indices, texture_name = polygons[i]
+							f.write(mapping)
+							f.write(unk0)
+							f.write(struct.pack('<4B', *vertex_indices))
+							f.write(texture_name)
+					else:
+						f.write(struct.pack('<I', num_vrtx))
+						f.write(struct.pack('<I', num_plgn))
+						f.write(struct.pack('<3i', *pos))
+						f.write(struct.pack('<I', object_unk0))
+						f.write(struct.pack('<I', object_unk1))
+						f.write(struct.pack('<Q', object_unk2))
+						f.write(struct.pack('<Q', object_unk3))
+						f.write(struct.pack('<Q', object_unk4))
 				else:
 					f.write(struct.pack('<I', 0))
 					f.write(struct.pack('<I', 0))
