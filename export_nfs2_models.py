@@ -192,16 +192,16 @@ def main(context, export_path, game_version, m):
 					bm.free()
 					
 					# Writing body
+					f.write(struct.pack('<I', num_vrtx))
+					f.write(struct.pack('<I', num_plgn))
+					f.write(struct.pack('<3i', *pos))
+					f.write(struct.pack('<I', object_unk0))
+					f.write(struct.pack('<I', object_unk1))
+					f.write(struct.pack('<Q', object_unk2))
+					f.write(struct.pack('<Q', object_unk3))
+					f.write(struct.pack('<Q', object_unk4))
+					
 					if num_vrtx > 0:
-						f.write(struct.pack('<I', num_vrtx))
-						f.write(struct.pack('<I', num_plgn))
-						f.write(struct.pack('<3i', *pos))
-						f.write(struct.pack('<I', object_unk0))
-						f.write(struct.pack('<I', object_unk1))
-						f.write(struct.pack('<Q', object_unk2))
-						f.write(struct.pack('<Q', object_unk3))
-						f.write(struct.pack('<Q', object_unk4))
-						
 						for i in range(0, num_vrtx):
 							f.write(struct.pack('<3h', *vertices[i]))
 						if num_vrtx % 2 == 1:	#Data offset, happens when num_vrtx is odd
@@ -209,22 +209,15 @@ def main(context, export_path, game_version, m):
 								f.write(b'\x42\x45\x4E\x44' + b'\x00' * 0x2)
 							else:
 								f.write(struct.pack('<3h', 0, 0, 0))
-						
+					
+					if num_plgn > 0:
 						for i in range(0, num_plgn):
 							mapping, unk0, vertex_indices, texture_name = polygons[i]
 							f.write(mapping)
 							f.write(unk0)
 							f.write(struct.pack('<4B', *vertex_indices))
 							f.write(texture_name)
-					else:
-						f.write(struct.pack('<I', num_vrtx))
-						f.write(struct.pack('<I', num_plgn))
-						f.write(struct.pack('<3i', *pos))
-						f.write(struct.pack('<I', object_unk0))
-						f.write(struct.pack('<I', object_unk1))
-						f.write(struct.pack('<Q', object_unk2))
-						f.write(struct.pack('<Q', object_unk3))
-						f.write(struct.pack('<Q', object_unk4))
+				
 				else:
 					f.write(struct.pack('<I', 0))
 					f.write(struct.pack('<I', 0))
