@@ -99,22 +99,11 @@ def main(context, export_path, game_version, m):
 				if index in object_by_index:
 					object = object_by_index[index]
 					
-					num_vrtx = 0
-					num_plgn = 0
-					vertices = []
-					polygons = []
+					num_vrtx, num_plgn, pos, vertices, polygons, status = read_object(object, m)
 					
-					# Inits
-					mesh = object.data
-					bm = bmesh.new()
-					bm.from_mesh(mesh)
+					if status == 1:
+						return {'CANCELLED'}
 					
-					pos_scale = 65536
-					pos = Matrix(np.linalg.inv(m) @ object.matrix_world)
-					pos = pos.to_translation()
-					pos = [round(pos[0]*pos_scale),
-						   round(pos[1]*pos_scale),
-						   round(pos[2]*pos_scale)]
 					try:
 						object_unk0 = id_to_int(object["object_unk0"])
 					except:
@@ -129,67 +118,6 @@ def main(context, export_path, game_version, m):
 					object_unk2 = 0	#Always == 0x0
 					object_unk3 = 1	#Always == 0x1
 					object_unk4 = 1	#Always == 0x1
-					
-					vert_scale = 256
-					for vert in bm.verts:
-						if vert.hide == False:
-							vertices.append([round(vert_co*vert_scale) for i, vert_co in enumerate(vert.co)])
-							num_vrtx += 1
-					
-					face_unk0 = bm.faces.layers.int.get("face_unk0")
-					is_triangle = bm.faces.layers.int.get("is_triangle")
-					uv_flip = bm.faces.layers.int.get("uv_flip")
-					flip_normal = bm.faces.layers.int.get("flip_normal")
-					double_sided = bm.faces.layers.int.get("double_sided")
-					unknown_4 = bm.faces.layers.int.get("unknown_4")
-					unknown_5 = bm.faces.layers.int.get("unknown_5")
-					brake_light = bm.faces.layers.int.get("brake_light")
-					is_wheel = bm.faces.layers.int.get("is_wheel")
-					
-					for face in bm.faces:
-						if face.hide == False:
-							if len(face.verts) > 4 or len(face.verts) < 3:
-								print("ERROR: non triangular or quad face on mesh %s." % mesh.name)
-								return {"CANCELLED"}
-							if len(face.verts) == 3:
-								face[is_triangle] = True
-								vert = face.verts
-								if face[flip_normal] == 1:
-									vertex_indices = [vert[0].index, vert[2].index, vert[1].index, vert[1].index]
-								else:
-									vertex_indices = [vert[0].index, vert[1].index, vert[2].index, vert[2].index]
-							elif len(face.verts) == 4:
-								face[is_triangle] = False
-								vert = face.verts
-								if face[flip_normal] == 1:
-									vertex_indices = [vert[0].index, vert[3].index, vert[2].index, vert[1].index]
-								else:
-									vertex_indices = [vert[0].index, vert[1].index, vert[2].index, vert[3].index]
-							
-							mapping = [face[is_triangle], face[uv_flip], face[flip_normal], face[double_sided], face[unknown_4], face[unknown_5], face[brake_light], face[is_wheel]]
-							mapping = mapping_encode(mapping, "little")
-							
-							try:
-								unk0 = face[face_unk0].to_bytes(3, "little")
-							except:
-								unk0 = (0).to_bytes(3, "little")
-							
-							try:
-								if mesh.materials[face.material_index] == None:
-									print("ERROR: face without material found on mesh %s." % mesh.name)
-									return {"CANCELLED"}
-							except:
-								print("ERROR: face without material found on mesh %s." % mesh.name)
-								return {"CANCELLED"}
-							
-							material_name = mesh.materials[face.material_index].name
-							texture_name = (material_name[:4].encode('ascii'))
-							
-							polygons.append([mapping, unk0, vertex_indices, texture_name])
-							num_plgn += 1
-					
-					bm.clear()
-					bm.free()
 					
 					# Writing body
 					f.write(struct.pack('<I', num_vrtx))
@@ -213,6 +141,7 @@ def main(context, export_path, game_version, m):
 					if num_plgn > 0:
 						for i in range(0, num_plgn):
 							mapping, unk0, vertex_indices, texture_name = polygons[i]
+							mapping = mapping_encode(mapping, "little")
 							f.write(mapping)
 							f.write(unk0)
 							f.write(struct.pack('<4B', *vertex_indices))
@@ -232,6 +161,101 @@ def main(context, export_path, game_version, m):
 	elapsed_time = time.time() - start_time
 	print("Elapsed time: %.4fs" % elapsed_time)
 	return {'FINISHED'}
+
+
+def read_object(object, m):
+	num_vrtx = 0
+	num_plgn = 0
+	vertices = []
+	polygons = []
+	
+	# Inits
+	mesh = object.data
+	bm = bmesh.new()
+	bm.from_mesh(mesh)
+	
+	pos_scale = 65536
+	pos = Matrix(np.linalg.inv(m) @ object.matrix_world)
+	pos = pos.to_translation()
+	pos = [round(pos[0]*pos_scale), round(pos[1]*pos_scale), round(pos[2]*pos_scale)]
+	
+	vert_scale = 256
+	for vert in bm.verts:
+		if vert.hide == False:
+			vertices.append([round(vert_co*vert_scale) for i, vert_co in enumerate(vert.co)])
+			num_vrtx += 1
+	
+	face_unk0 = bm.faces.layers.int.get("face_unk0")
+	#is_triangle = bm.faces.layers.int.get("is_triangle")
+	uv_flip = bm.faces.layers.int.get("uv_flip")
+	flip_normal = bm.faces.layers.int.get("flip_normal")
+	double_sided = bm.faces.layers.int.get("double_sided")
+	unknown_4 = bm.faces.layers.int.get("unknown_4")
+	unknown_5 = bm.faces.layers.int.get("unknown_5")
+	brake_light = bm.faces.layers.int.get("brake_light")
+	is_wheel = bm.faces.layers.int.get("is_wheel")
+	
+	for face in bm.faces:
+		if face.hide == False:
+			if len(face.verts) > 4 or len(face.verts) < 3:
+				print("ERROR: non triangular or quad face on mesh %s." % mesh.name)
+				return (num_vrtx, num_plgn, pos, vertices, polygons, 1)
+			
+			vertex_indices = []
+			for vert in face.verts:
+				vert_index = vert.index
+				vertex_indices.append(vert_index)
+			
+			if len(face.verts) == 3:
+				is_triangle = True
+				try:
+					if face[flip_normal] == True:
+						vertex_indices = [vertex_indices[0], vertex_indices[2], vertex_indices[1], vertex_indices[1]]
+					else:
+						vertex_indices = [vertex_indices[0], vertex_indices[1], vertex_indices[2], vertex_indices[2]]
+				except:
+					vertex_indices = [vertex_indices[0], vertex_indices[1], vertex_indices[2], vertex_indices[2]]
+			elif len(face.verts) == 4:
+				is_triangle = False
+				try:
+					if face[flip_normal] == True:
+						vertex_indices = [vertex_indices[0], vertex_indices[3], vertex_indices[2], vertex_indices[1]]
+					else:
+						vertex_indices = [vertex_indices[0], vertex_indices[1], vertex_indices[2], vertex_indices[3]]
+				except:
+					vertex_indices = [vertex_indices[0], vertex_indices[1], vertex_indices[2], vertex_indices[3]]
+			
+			if None in [uv_flip, double_sided, unknown_4, unknown_5, brake_light, is_wheel]:
+				try:
+					mapping = (is_triangle, False, face[flip_normal], False, False, False, False, False)
+				except:
+					mapping = (is_triangle, False, False, False, False, False, False, False)
+			else:
+				mapping = [is_triangle, face[uv_flip], face[flip_normal], face[double_sided], face[unknown_4], face[unknown_5], face[brake_light], face[is_wheel]]
+			
+			try:
+				unk0 = face[face_unk0].to_bytes(3, "little")
+			except:
+				unk0 = (0).to_bytes(3, "little")
+			
+			try:
+				if mesh.materials[face.material_index] == None:
+					print("ERROR: face without material found on mesh %s." % mesh.name)
+					return (num_vrtx, num_plgn, pos, vertices, polygons, 1)
+			except:
+				print("ERROR: face without material found on mesh %s." % mesh.name)
+				return (num_vrtx, num_plgn, pos, vertices, polygons, 1)
+			
+			material_name = mesh.materials[face.material_index].name
+			texture_name = (material_name[:4].encode('ascii'))
+			
+			polygons.append([mapping, unk0, vertex_indices, texture_name])
+			num_plgn += 1
+	
+	bm.clear()
+	bm.free()
+	
+	return (num_vrtx, num_plgn, pos, vertices, polygons, 0)
 
 
 def mapping_encode(mapping, endian):
