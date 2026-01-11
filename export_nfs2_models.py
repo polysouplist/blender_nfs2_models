@@ -99,10 +99,15 @@ def main(context, export_path, game_version, m):
 				if index in object_by_index:
 					object = object_by_index[index]
 					
-					num_vrtx, num_plgn, pos, vertices, polygons, status = read_object(object, m)
+					num_vrtx, num_plgn, vertices, polygons, status = read_object(object)
 					
 					if status == 1:
 						return {'CANCELLED'}
+					
+					pos_scale = 65536
+					pos = Matrix(np.linalg.inv(m) @ object.matrix_world)
+					pos = pos.to_translation()
+					pos = [round(pos[0]*pos_scale), round(pos[1]*pos_scale), round(pos[2]*pos_scale)]
 					
 					try:
 						object_unk0 = id_to_int(object["object_unk0"])
@@ -163,7 +168,7 @@ def main(context, export_path, game_version, m):
 	return {'FINISHED'}
 
 
-def read_object(object, m):
+def read_object(object):
 	num_vrtx = 0
 	num_plgn = 0
 	vertices = []
@@ -173,11 +178,6 @@ def read_object(object, m):
 	mesh = object.data
 	bm = bmesh.new()
 	bm.from_mesh(mesh)
-	
-	pos_scale = 65536
-	pos = Matrix(np.linalg.inv(m) @ object.matrix_world)
-	pos = pos.to_translation()
-	pos = [round(pos[0]*pos_scale), round(pos[1]*pos_scale), round(pos[2]*pos_scale)]
 	
 	vert_scale = 256
 	for vert in bm.verts:
@@ -255,7 +255,7 @@ def read_object(object, m):
 	bm.clear()
 	bm.free()
 	
-	return (num_vrtx, num_plgn, pos, vertices, polygons, 0)
+	return (num_vrtx, num_plgn, vertices, polygons, 0)
 
 
 def mapping_encode(mapping, endian):
