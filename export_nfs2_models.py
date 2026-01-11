@@ -159,9 +159,9 @@ def read_object(object):
 	#is_triangle = bm.faces.layers.int.get("is_triangle")
 	uv_flip = bm.faces.layers.int.get("uv_flip")
 	flip_normal = bm.faces.layers.int.get("flip_normal")
+	alpha_clip = bm.faces.layers.int.get("alpha_clip")
 	double_sided = bm.faces.layers.int.get("double_sided")
-	unknown_4 = bm.faces.layers.int.get("unknown_4")
-	unknown_5 = bm.faces.layers.int.get("unknown_5")
+	unknown = bm.faces.layers.int.get("unknown")
 	brake_light = bm.faces.layers.int.get("brake_light")
 	is_wheel = bm.faces.layers.int.get("is_wheel")
 	
@@ -198,13 +198,13 @@ def read_object(object):
 				except:
 					vertex_indices = [vertex_indices[0], vertex_indices[1], vertex_indices[2], vertex_indices[3]]
 			
-			if None in [uv_flip, double_sided, unknown_4, unknown_5, brake_light, is_wheel]:
+			if None in [uv_flip, alpha_clip, double_sided, unknown, brake_light, is_wheel]:
 				try:
 					mapping = (is_triangle, False, face[flip_normal], False, False, False, False, False)
 				except:
 					mapping = (is_triangle, False, False, False, False, False, False, False)
 			else:
-				mapping = [is_triangle, face[uv_flip], face[flip_normal], face[double_sided], face[unknown_4], face[unknown_5], face[brake_light], face[is_wheel]]
+				mapping = [is_triangle, face[uv_flip], face[flip_normal], face[alpha_clip], face[double_sided], face[unknown], face[brake_light], face[is_wheel]]
 			
 			try:
 				unk0 = face[face_unk0].to_bytes(3, "little")
@@ -287,9 +287,9 @@ def mapping_encode(mapping, endian):
 		"is_triangle",
 		"uv_flip",
 		"flip_normal",
+		"alpha_clip",
 		"double_sided",
-		"unknown_4",
-		"unknown_5",
+		"unknown",
 		"brake_light",
 		"is_wheel"
 	]
