@@ -56,111 +56,87 @@ def main(context, export_path, game_version, m):
 			continue
 		
 		file_path = os.path.join(export_path, main_collection.name)
-		os.makedirs(os.path.dirname(file_path), exist_ok = True)
 		
 		print("Reading scene data for main collection %s..." % (main_collection.name))
 		
 		objects = main_collection.objects
 		object_index = -1
 		
-		with open(file_path, "wb") as f:
-			try:
-				header_unk0 = main_collection["header_unk0"]
-			except:
-				print("WARNING: collection %s is missing parameter %s. Assuming some value (0)." % (main_collection.name, '"header_unk0"'))
-				header_unk0 = 0
-			try:
-				header_unk1 = [id_to_int(i) for i in main_collection["header_unk1"]]
-			except:
-				print("WARNING: collection %s is missing parameter %s. Assuming some value (0)." % (main_collection.name, '"header_unk1"'))
-				header_unk1 = [0 for _ in range(32)]
+		try:
+			header_unk0 = main_collection["header_unk0"]
+		except:
+			print("WARNING: collection %s is missing parameter %s. Assuming some value (0)." % (main_collection.name, '"header_unk0"'))
+			header_unk0 = 0
+		try:
+			header_unk1 = [id_to_int(i) for i in main_collection["header_unk1"]]
+		except:
+			print("WARNING: collection %s is missing parameter %s. Assuming some value (0)." % (main_collection.name, '"header_unk1"'))
+			header_unk1 = [0 for _ in range(32)]
+		
+		header_unk2 = 0	#Always == 0x0
+		
+		object_by_index = {}
+		for obj in objects:
+			if obj.type == 'MESH' and "object_index" in obj:
+				idx = obj["object_index"]
+				if idx in object_by_index:
+					print(f"WARNING: Duplicate object_index {idx}! Skipping duplicate.")
+					continue
+				object_by_index[idx] = obj
+		
+		GeoMeshes = []
+		
+		for index in range(32):
+			num_vrtx = 0
+			num_plgn = 0
+			pos = [0, 0, 0]
+			object_unk0 = 0
+			object_unk1 = 0
+			object_unk2 = 0	#Always == 0x0
+			object_unk3 = 1	#Always == 0x1
+			object_unk4 = 1	#Always == 0x1
 			
-			header_unk2 = 0	#Always == 0x0
-			
-			# Writing header
-			f.write(struct.pack('<I', header_unk0))
-			for i in range(32):
-				try:
-					f.write(struct.pack('<I', header_unk1[i]))
-				except:
-					f.write(struct.pack('<I', 0))
-			f.write(struct.pack('<Q', header_unk2))
-			
-			object_by_index = {}
-			for obj in objects:
-				if obj.type == 'MESH' and "object_index" in obj:
-					idx = obj["object_index"]
-					if idx in object_by_index:
-						print(f"WARNING: Duplicate object_index {idx}! Skipping duplicate.")
-						continue
-					object_by_index[idx] = obj
-			
-			for index in range(32):
-				if index in object_by_index:
-					object = object_by_index[index]
-					
-					num_vrtx, num_plgn, vertices, polygons, status = read_object(object)
-					
-					if status == 1:
-						return {'CANCELLED'}
-					
-					pos_scale = 65536
-					pos = Matrix(np.linalg.inv(m) @ object.matrix_world)
-					pos = pos.to_translation()
-					pos = [round(pos[0]*pos_scale), round(pos[1]*pos_scale), round(pos[2]*pos_scale)]
-					
-					try:
-						object_unk0 = id_to_int(object["object_unk0"])
-					except:
-						print("WARNING: object %s is missing parameter %s. Assuming some value (0)." % (object.name, '"object_unk0"'))
-						object_unk0 = 0
-					try:
-						object_unk1 = id_to_int(object["object_unk1"])
-					except:
-						print("WARNING: object %s is missing parameter %s. Assuming some value (0)." % (object.name, '"object_unk1"'))
-						object_unk1 = 0
-					
-					object_unk2 = 0	#Always == 0x0
-					object_unk3 = 1	#Always == 0x1
-					object_unk4 = 1	#Always == 0x1
-					
-					# Writing body
-					f.write(struct.pack('<I', num_vrtx))
-					f.write(struct.pack('<I', num_plgn))
-					f.write(struct.pack('<3i', *pos))
-					f.write(struct.pack('<I', object_unk0))
-					f.write(struct.pack('<I', object_unk1))
-					f.write(struct.pack('<Q', object_unk2))
-					f.write(struct.pack('<Q', object_unk3))
-					f.write(struct.pack('<Q', object_unk4))
-					
-					if num_vrtx > 0:
-						for i in range(0, num_vrtx):
-							f.write(struct.pack('<3h', *vertices[i]))
-						if num_vrtx % 2 == 1:	#Data offset, happens when num_vrtx is odd
-							if game_version == 'OPT_A':
-								f.write(b'\x42\x45\x4E\x44' + b'\x00' * 0x2)
-							else:
-								f.write(struct.pack('<3h', 0, 0, 0))
-					
-					if num_plgn > 0:
-						for i in range(0, num_plgn):
-							mapping, unk0, vertex_indices, texture_name = polygons[i]
-							mapping = mapping_encode(mapping, "little")
-							f.write(mapping)
-							f.write(unk0)
-							f.write(struct.pack('<4B', *vertex_indices))
-							f.write(texture_name)
+			if index in object_by_index:
+				object = object_by_index[index]
 				
-				else:
-					f.write(struct.pack('<I', 0))
-					f.write(struct.pack('<I', 0))
-					f.write(struct.pack('<3i', 0, 0, 0))
-					f.write(struct.pack('<I', 0))
-					f.write(struct.pack('<I', 0))
-					f.write(struct.pack('<Q', 0))
-					f.write(struct.pack('<Q', 1))
-					f.write(struct.pack('<Q', 1))
+				num_vrtx, num_plgn, vertices, polygons, status = read_object(object)
+				
+				if status == 1:
+					return {'CANCELLED'}
+				
+				pos_scale = 65536
+				pos = Matrix(np.linalg.inv(m) @ object.matrix_world)
+				pos = pos.to_translation()
+				pos = [round(pos[0]*pos_scale), round(pos[1]*pos_scale), round(pos[2]*pos_scale)]
+				
+				try:
+					object_unk0 = id_to_int(object["object_unk0"])
+				except:
+					print("WARNING: object %s is missing parameter %s. Assuming some value (0)." % (object.name, '"object_unk0"'))
+					object_unk0 = 0
+				try:
+					object_unk1 = id_to_int(object["object_unk1"])
+				except:
+					print("WARNING: object %s is missing parameter %s. Assuming some value (0)." % (object.name, '"object_unk1"'))
+					object_unk1 = 0
+				
+				GeoMesh = [num_vrtx, num_plgn, pos, object_unk0, object_unk1, object_unk2, object_unk3, object_unk4, vertices, polygons]
+			
+			else:
+				GeoMesh = [0, 0, [0, 0, 0], 0, 0, 0, 1, 1, [], []]
+			
+			GeoMeshes.append(GeoMesh)
+		
+		GeoGeometry = [header_unk0, header_unk1, header_unk2, GeoMeshes]
+		
+		## Writing data
+		print("\tWriting data...")
+		writing_time = time.time()
+
+		write_GeoGeometry(file_path, GeoGeometry, game_version)
+
+		elapsed_time = time.time() - writing_time
+		print("\t... %.4fs" % elapsed_time)	
 	
 	print("Finished")
 	elapsed_time = time.time() - start_time
@@ -256,6 +232,55 @@ def read_object(object):
 	bm.free()
 	
 	return (num_vrtx, num_plgn, vertices, polygons, 0)
+
+
+def write_GeoGeometry(file_path, GeoGeometry, game_version):
+	os.makedirs(os.path.dirname(file_path), exist_ok = True)
+	
+	header_unk0, header_unk1, header_unk2, GeoMeshes = GeoGeometry
+	
+	with open(file_path, "wb") as f:
+		# Writing header
+		f.write(struct.pack('<I', header_unk0))
+		for i in range(32):
+			try:
+				f.write(struct.pack('<I', header_unk1[i]))
+			except:
+				f.write(struct.pack('<I', 0))
+		f.write(struct.pack('<Q', header_unk2))
+		
+		for i in range(0, len(GeoMeshes)):
+			num_vrtx, num_plgn, pos, object_unk0, object_unk1, object_unk2, object_unk3, object_unk4, vertices, polygons = GeoMeshes[i]
+			
+			# Writing body
+			f.write(struct.pack('<I', num_vrtx))
+			f.write(struct.pack('<I', num_plgn))
+			f.write(struct.pack('<3i', *pos))
+			f.write(struct.pack('<I', object_unk0))
+			f.write(struct.pack('<I', object_unk1))
+			f.write(struct.pack('<Q', object_unk2))
+			f.write(struct.pack('<Q', object_unk3))
+			f.write(struct.pack('<Q', object_unk4))
+			
+			if num_vrtx > 0:
+				for j in range(0, num_vrtx):
+					f.write(struct.pack('<3h', *vertices[j]))
+				if num_vrtx % 2 == 1:	#Data offset, happens when num_vrtx is odd
+					if game_version == 'OPT_A':
+						f.write(b'\x42\x45\x4E\x44' + b'\x00' * 0x2)
+					else:
+						f.write(struct.pack('<3h', 0, 0, 0))
+			
+			if num_plgn > 0:
+				for j in range(0, num_plgn):
+					mapping, unk0, vertex_indices, texture_name = polygons[j]
+					mapping = mapping_encode(mapping, "little")
+					f.write(mapping)
+					f.write(unk0)
+					f.write(struct.pack('<4B', *vertex_indices))
+					f.write(texture_name)
+	
+	return 0
 
 
 def mapping_encode(mapping, endian):
