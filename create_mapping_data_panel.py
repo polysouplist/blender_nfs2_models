@@ -1,11 +1,11 @@
 bl_info = {
-    "name": "Mapping Properties Panels",
-    "author": "PolySoupList",
-    "version": (1, 0, 0),
-    "blender": (3, 6, 23),
-    "location": "Properties Panel > Object Data Properties",
-    "description": "Quick access to mapping properties",
-    "category": "UI",
+	"name": "Mapping Properties Panels",
+	"author": "PolySoupList",
+	"version": (1, 0, 0),
+	"blender": (3, 6, 23),
+	"location": "Properties Panel > Object Data Properties",
+	"description": "Quick access to mapping properties",
+	"category": "UI",
 }
 
 
@@ -15,7 +15,7 @@ import bmesh
 
 class FaceUnk0Panel(bpy.types.Panel):
 	"""Creates a Panel in the Mesh properties window"""
-	bl_label = "Face Unk0"
+	bl_label = "Face Unk 0"
 	bl_idname = "OBJECT_PT_FaceUnk0"
 	bl_space_type = 'PROPERTIES'
 	bl_region_type = 'WINDOW'
@@ -62,9 +62,9 @@ class MappingPanel(bpy.types.Panel):
 			f1 = me.polygon_layers_int.get("is_triangle") or me.polygon_layers_int.new(name="is_triangle")
 			f2 = me.polygon_layers_int.get("uv_flip") or me.polygon_layers_int.new(name="uv_flip")
 			f3 = me.polygon_layers_int.get("flip_normal") or me.polygon_layers_int.new(name="flip_normal")
-			f4 = me.polygon_layers_int.get("double_sided") or me.polygon_layers_int.new(name="double_sided")
-			f5 = me.polygon_layers_int.get("unknown_4") or me.polygon_layers_int.new(name="unknown_4")
-			f6 = me.polygon_layers_int.get("unknown_5") or me.polygon_layers_int.new(name="unknown_5")
+			f4 = me.polygon_layers_int.get("alpha_clip") or me.polygon_layers_int.new(name="alpha_clip")
+			f5 = me.polygon_layers_int.get("double_sided") or me.polygon_layers_int.new(name="double_sided")
+			f6 = me.polygon_layers_int.get("unknown") or me.polygon_layers_int.new(name="unknown")
 			f7 = me.polygon_layers_int.get("brake_light") or me.polygon_layers_int.new(name="brake_light")
 			f8 = me.polygon_layers_int.get("is_wheel") or me.polygon_layers_int.new(name="is_wheel")
 			
@@ -83,9 +83,9 @@ class MappingPanel(bpy.types.Panel):
 		box.prop(me, "is_triangle")
 		box.prop(me, "uv_flip")
 		box.prop(me, "flip_normal")
+		box.prop(me, "alpha_clip")
 		box.prop(me, "double_sided")
-		box.prop(me, "unknown_4")
-		box.prop(me, "unknown_5")
+		box.prop(me, "unknown")
 		box.prop(me, "brake_light")
 		box.prop(me, "is_wheel")
 
@@ -155,6 +155,19 @@ def set_int_flip_normal(self, value):
 			bmesh.update_edit_mesh(self)
 
 
+def set_int_alpha_clip(self, value):
+	bm = MappingPanel.ebm.setdefault(self.name, bmesh.from_edit_mesh(self))
+
+	# get the mapping layer
+	mapping = (bm.faces.layers.int.get("alpha_clip") or bm.faces.layers.int.new("alpha_clip"))
+
+	selected_faces = [x for x in bm.faces if x.select]
+	for elem in selected_faces:
+		if isinstance(elem, bmesh.types.BMFace):
+			elem[mapping] = value
+			bmesh.update_edit_mesh(self)
+
+
 def set_int_double_sided(self, value):
 	bm = MappingPanel.ebm.setdefault(self.name, bmesh.from_edit_mesh(self))
 
@@ -168,24 +181,11 @@ def set_int_double_sided(self, value):
 			bmesh.update_edit_mesh(self)
 
 
-def set_int_unknown_4(self, value):
+def set_int_unknown(self, value):
 	bm = MappingPanel.ebm.setdefault(self.name, bmesh.from_edit_mesh(self))
 
 	# get the mapping layer
-	mapping = (bm.faces.layers.int.get("unknown_4") or bm.faces.layers.int.new("unknown_4"))
-
-	selected_faces = [x for x in bm.faces if x.select]
-	for elem in selected_faces:
-		if isinstance(elem, bmesh.types.BMFace):
-			elem[mapping] = value
-			bmesh.update_edit_mesh(self)
-
-
-def set_int_unknown_5(self, value):
-	bm = MappingPanel.ebm.setdefault(self.name, bmesh.from_edit_mesh(self))
-
-	# get the mapping layer
-	mapping = (bm.faces.layers.int.get("unknown_5") or bm.faces.layers.int.new("unknown_5"))
+	mapping = (bm.faces.layers.int.get("unknown") or bm.faces.layers.int.new("unknown"))
 
 	selected_faces = [x for x in bm.faces if x.select]
 	for elem in selected_faces:
@@ -256,6 +256,18 @@ def get_int_flip_normal(self):
 	return 0
 
 
+def get_int_alpha_clip(self):
+	bm = MappingPanel.ebm.setdefault(self.name, bmesh.from_edit_mesh(self))
+	flag = bm.faces.layers.int.get("alpha_clip") or bm.faces.layers.int.new("alpha_clip")
+
+	selected_faces = [x for x in bm.faces if x.select]
+	for elem in selected_faces:
+		if isinstance(elem, bmesh.types.BMFace):
+			return(elem[flag])
+	
+	return 0
+
+
 def get_int_double_sided(self):
 	bm = MappingPanel.ebm.setdefault(self.name, bmesh.from_edit_mesh(self))
 	flag = bm.faces.layers.int.get("double_sided") or bm.faces.layers.int.new("double_sided")
@@ -268,21 +280,9 @@ def get_int_double_sided(self):
 	return 0
 
 
-def get_int_unknown_4(self):
+def get_int_unknown(self):
 	bm = MappingPanel.ebm.setdefault(self.name, bmesh.from_edit_mesh(self))
-	flag = bm.faces.layers.int.get("unknown_4") or bm.faces.layers.int.new("unknown_4")
-
-	selected_faces = [x for x in bm.faces if x.select]
-	for elem in selected_faces:
-		if isinstance(elem, bmesh.types.BMFace):
-			return(elem[flag])
-	
-	return 0
-
-
-def get_int_unknown_5(self):
-	bm = MappingPanel.ebm.setdefault(self.name, bmesh.from_edit_mesh(self))
-	flag = bm.faces.layers.int.get("unknown_5") or bm.faces.layers.int.new("unknown_5")
+	flag = bm.faces.layers.int.get("unknown") or bm.faces.layers.int.new("unknown")
 
 	selected_faces = [x for x in bm.faces if x.select]
 	for elem in selected_faces:
@@ -322,14 +322,14 @@ def register():
 	
 	bpy.types.Mesh.face_unk0 = bpy.props.IntProperty(name="Face Unk 0", description="Face Unk 0", min=-8388608, max=8388607, get=get_int_face_unk0, set=set_int_face_unk0)
 	
-	bpy.types.Mesh.is_triangle = bpy.props.BoolProperty(name="is_triangle", description="Is triangle?", default=True, get=get_int_is_triangle, set=set_int_is_triangle)
-	bpy.types.Mesh.uv_flip = bpy.props.BoolProperty(name="uv_flip", description="Uv flip?", default=False, get=get_int_uv_flip, set=set_int_uv_flip)
-	bpy.types.Mesh.flip_normal = bpy.props.BoolProperty(name="flip_normal", description="Flip normal?", default=False, get=get_int_flip_normal, set=set_int_flip_normal)
-	bpy.types.Mesh.double_sided = bpy.props.BoolProperty(name="double_sided", description="Double sided?", default=False, get=get_int_double_sided, set=set_int_double_sided)
-	bpy.types.Mesh.unknown_4 = bpy.props.BoolProperty(name="unknown_4", description="Unknown 4?", default=False, get=get_int_unknown_4, set=set_int_unknown_4)
-	bpy.types.Mesh.unknown_5 = bpy.props.BoolProperty(name="unknown_5", description="Unknown 5?", default=False, get=get_int_unknown_5, set=set_int_unknown_5)
-	bpy.types.Mesh.brake_light = bpy.props.BoolProperty(name="brake_light", description="Brake light?", default=False, get=get_int_brake_light, set=set_int_brake_light)
-	bpy.types.Mesh.is_wheel = bpy.props.BoolProperty(name="is_wheel", description="Is wheel?", default=False, get=get_int_is_wheel, set=set_int_is_wheel)
+	bpy.types.Mesh.is_triangle = bpy.props.BoolProperty(name="is_triangle", description="Is triangle? Used on faces where the 3rd and 4th vertices are the same", default=True, get=get_int_is_triangle, set=set_int_is_triangle)
+	bpy.types.Mesh.uv_flip = bpy.props.BoolProperty(name="uv_flip", description="Uv flip? Used on faces with flipped texture coordinates", default=False, get=get_int_uv_flip, set=set_int_uv_flip)
+	bpy.types.Mesh.flip_normal = bpy.props.BoolProperty(name="flip_normal", description="Flip normal? Used on faces with an inverted normal vector", default=False, get=get_int_flip_normal, set=set_int_flip_normal)
+	bpy.types.Mesh.alpha_clip = bpy.props.BoolProperty(name="alpha_clip", description="Alpha clip? Used on faces to determine binary opacity in software mode", default=False, get=get_int_alpha_clip, set=set_int_alpha_clip)
+	bpy.types.Mesh.double_sided = bpy.props.BoolProperty(name="double_sided", description="Double sided? Used on faces that are visible from both sides", default=False, get=get_int_double_sided, set=set_int_double_sided)
+	bpy.types.Mesh.unknown = bpy.props.BoolProperty(name="unknown", description="Unknown? Unknown", default=False, get=get_int_unknown, set=set_int_unknown)
+	bpy.types.Mesh.brake_light = bpy.props.BoolProperty(name="brake_light", description="Brake light? Used on faces with a brake light texture", default=False, get=get_int_brake_light, set=set_int_brake_light)
+	bpy.types.Mesh.is_wheel = bpy.props.BoolProperty(name="is_wheel", description="Is wheel? Used on faces with a wheel texture", default=False, get=get_int_is_wheel, set=set_int_is_wheel)
 
 
 def unregister():
@@ -341,9 +341,9 @@ def unregister():
 	delattr(bpy.types.Mesh, "is_triangle")
 	delattr(bpy.types.Mesh, "uv_flip")
 	delattr(bpy.types.Mesh, "flip_normal")
+	delattr(bpy.types.Mesh, "alpha_clip")
 	delattr(bpy.types.Mesh, "double_sided")
-	delattr(bpy.types.Mesh, "unknown_4")
-	delattr(bpy.types.Mesh, "unknown_5")
+	delattr(bpy.types.Mesh, "unknown")
 	delattr(bpy.types.Mesh, "brake_light")
 	delattr(bpy.types.Mesh, "is_wheel")
 
