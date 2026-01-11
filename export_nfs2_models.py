@@ -161,6 +161,10 @@ def read_object(object):
 			vertices.append([round(vert_co*vert_scale) for i, vert_co in enumerate(vert.co)])
 			num_vrtx += 1
 	
+	if num_vrtx > 0xFF:
+		print("ERROR: number of vertices higher than the supported by the game on mesh %s. It cannot have more than 255 vertices." % mesh.name)
+		return (num_vrtx, num_plgn, vertices, polygons, 1)
+	
 	face_unk0 = bm.faces.layers.int.get("face_unk0")
 	#is_triangle = bm.faces.layers.int.get("is_triangle")
 	uv_flip = bm.faces.layers.int.get("uv_flip")
@@ -175,7 +179,7 @@ def read_object(object):
 		if face.hide == False:
 			if len(face.verts) > 4 or len(face.verts) < 3:
 				print("ERROR: non triangular or quad face on mesh %s." % mesh.name)
-				return (num_vrtx, num_plgn, pos, vertices, polygons, 1)
+				return (num_vrtx, num_plgn, vertices, polygons, 1)
 			
 			vertex_indices = []
 			for vert in face.verts:
@@ -217,10 +221,10 @@ def read_object(object):
 			try:
 				if mesh.materials[face.material_index] == None:
 					print("ERROR: face without material found on mesh %s." % mesh.name)
-					return (num_vrtx, num_plgn, pos, vertices, polygons, 1)
+					return (num_vrtx, num_plgn, vertices, polygons, 1)
 			except:
 				print("ERROR: face without material found on mesh %s." % mesh.name)
-				return (num_vrtx, num_plgn, pos, vertices, polygons, 1)
+				return (num_vrtx, num_plgn, vertices, polygons, 1)
 			
 			material_name = mesh.materials[face.material_index].name
 			texture_name = (material_name[:4].encode('ascii'))
