@@ -87,15 +87,6 @@ def main(context, export_path, game_version, m):
 		GeoMeshes = []
 		
 		for index in range(32):
-			num_vrtx = 0
-			num_plgn = 0
-			pos = [0, 0, 0]
-			object_unk0 = 0
-			object_unk1 = 0
-			object_unk2 = 0	#Always == 0x0
-			object_unk3 = 1	#Always == 0x1
-			object_unk4 = 1	#Always == 0x1
-			
 			if index in object_by_index:
 				object = object_by_index[index]
 				
@@ -120,8 +111,11 @@ def main(context, export_path, game_version, m):
 					print("WARNING: object %s is missing parameter %s. Assuming some value (0)." % (object.name, '"object_unk1"'))
 					object_unk1 = 0
 				
-				GeoMesh = [num_vrtx, num_plgn, pos, object_unk0, object_unk1, object_unk2, object_unk3, object_unk4, vertices, polygons]
-			
+				object_unk2 = 0	#Always == 0x0
+				object_unk3 = 1	#Always == 0x1
+				object_unk4 = 1	#Always == 0x1
+				
+				GeoMesh = [num_vrtx, num_plgn, pos, object_unk0, object_unk1, object_unk2, object_unk3, object_unk4, vertices, polygons]			
 			else:
 				GeoMesh = [0, 0, [0, 0, 0], 0, 0, 0, 1, 1, [], []]
 			
@@ -161,10 +155,6 @@ def read_object(object):
 			vertices.append([round(vert_co*vert_scale) for i, vert_co in enumerate(vert.co)])
 			num_vrtx += 1
 	
-	if num_vrtx > 0xFF:
-		print("ERROR: number of vertices higher than the supported by the game on mesh %s. It cannot have more than 255 vertices." % mesh.name)
-		return (num_vrtx, num_plgn, vertices, polygons, 1)
-	
 	face_unk0 = bm.faces.layers.int.get("face_unk0")
 	#is_triangle = bm.faces.layers.int.get("is_triangle")
 	uv_flip = bm.faces.layers.int.get("uv_flip")
@@ -184,6 +174,9 @@ def read_object(object):
 			vertex_indices = []
 			for vert in face.verts:
 				vert_index = vert.index
+				if vert_index > 0xFF:
+					print("ERROR: vertex index forming face higher than the supported by the game on mesh %s. It cannot be above 255." % mesh.name)
+					return (num_vrtx, num_plgn, vertices, polygons, 1)
 				vertex_indices.append(vert_index)
 			
 			if len(face.verts) == 3:
@@ -288,28 +281,28 @@ def write_GeoGeometry(file_path, GeoGeometry, game_version):
 
 
 def mapping_encode(mapping, endian):
-	# Step 1: Pack mapping into a 8-bit integer
 	mapping_value = 0
+	
 	mapping_names = [
-	"is_triangle", "uv_flip", "flip_normal", "double_sided",
-	"unknown_4", "unknown_5", "brake_light", "is_wheel"
+		"is_triangle",
+		"uv_flip",
+		"flip_normal",
+		"double_sided",
+		"unknown_4",
+		"unknown_5",
+		"brake_light",
+		"is_wheel"
 	]
 	
-	# Set the corresponding mapping bits
 	for i, value in enumerate(mapping):
-		if value:  # Set the bit at position i if the mapping is 1
-			mapping_value |= (1 << i)  # Bitwise OR to set the i-th bit
+		if value:
+			mapping_value |= (1 << i)
 	
-	# Step 2: Pack everything into a 8-bit integer using bit shifting
 	packed_value = (
-		(mapping_value & 0xFF)            # 4 bits for mapping
+		(mapping_value & 0xFF)
 	)
 	
-	# Step 3: Convert the packed 8-bit integer to a 1-byte sequence
 	mapping_bytes = packed_value.to_bytes(1, byteorder=endian)
-	
-	# Step 4: Print the output as hexadecimal byte
-	#hex_output = ' '.join(f'{byte:02X}' for byte in mapping_bytes)
 	
 	return mapping_bytes
 
