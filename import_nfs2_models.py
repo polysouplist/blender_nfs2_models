@@ -119,9 +119,9 @@ def import_nfs2_models(context, file_path, clear_scene, m):
 				is_triangle = (bm.faces.layers.int.get("is_triangle") or bm.faces.layers.int.new("is_triangle"))
 				uv_flip = (bm.faces.layers.int.get("uv_flip") or bm.faces.layers.int.new("uv_flip"))
 				flip_normal = (bm.faces.layers.int.get("flip_normal") or bm.faces.layers.int.new("flip_normal"))
+				alpha_clip = (bm.faces.layers.int.get("alpha_clip") or bm.faces.layers.int.new("alpha_clip"))
 				double_sided = (bm.faces.layers.int.get("double_sided") or bm.faces.layers.int.new("double_sided"))
-				unknown_4 = (bm.faces.layers.int.get("unknown_4") or bm.faces.layers.int.new("unknown_4"))
-				unknown_5 = (bm.faces.layers.int.get("unknown_5") or bm.faces.layers.int.new("unknown_5"))
+				unknown = (bm.faces.layers.int.get("unknown") or bm.faces.layers.int.new("unknown"))
 				brake_light = (bm.faces.layers.int.get("brake_light") or bm.faces.layers.int.new("brake_light"))
 				is_wheel = (bm.faces.layers.int.get("is_wheel") or bm.faces.layers.int.new("is_wheel"))
 				
@@ -159,9 +159,9 @@ def import_nfs2_models(context, file_path, clear_scene, m):
 					BMFace[is_triangle] = mapping[0][1]
 					BMFace[uv_flip] = mapping[1][1]
 					BMFace[flip_normal] = mapping[2][1]
-					BMFace[double_sided] = mapping[3][1]
-					BMFace[unknown_4] = mapping[4][1]
-					BMFace[unknown_5] = mapping[5][1]
+					BMFace[alpha_clip] = mapping[3][1]
+					BMFace[double_sided] = mapping[4][1]
+					BMFace[unknown] = mapping[5][1]
 					BMFace[brake_light] = mapping[6][1]
 					BMFace[is_wheel] = mapping[7][1]
 					
@@ -256,36 +256,26 @@ def get_geoPartNames(index):
 
 
 def mapping_decode(mapping, endian):
-	# Step 1: Swap the endianness
-	# Convert bytes to an integer, swap the endianness using `int.from_bytes`.
-	swapped = int.from_bytes(mapping, byteorder=endian)  # Swap to little-endian
+	swapped = int.from_bytes(mapping, byteorder=endian)
 	
-	# Step 2: Convert to binary string
-	# Convert the integer to a binary string, padding with leading zeros to make it 8 bits.
 	binary_str = format(swapped, '008b')
 	
-	# Step 3: Split the bits according to specified offsets and lengths and convert them to integers
-	mapping = int(binary_str[0:8], 2)      # Offset 0, length 8
+	mapping = int(binary_str[0:8], 2)
 	
-	# Step 4: Unpack the mapping using bit shifts
 	mapping_names = [
-		"is_triangle",			# Bit 0
-		"uv_flip",				# Bit 1
-		"flip_normal",			# Bit 2
-		"double_sided",			# Bit 3
-		"unknown_4",			# Bit 4
-		"unknown_5",			# Bit 5
-		"brake_light",			# Bit 6
-		"is_wheel"				# Bit 7
+		"is_triangle",
+		"uv_flip",
+		"flip_normal",
+		"alpha_clip",
+		"double_sided",
+		"unknown",
+		"brake_light",
+		"is_wheel"
 	]
 	
-	# Extracting each mapping's state
 	mapping_values = [(mapping >> i) & 1 for i in range(8)]
 	
 	mapping = [(name, value) for name, value in zip(mapping_names, mapping_values)]
-	
-	## Keeping only the used mapping (those with value 1)
-	#used_mapping = [(name, value) for name, value in zip(mapping_names, mapping_values) if value == 1]
 	
 	return(mapping)
 
