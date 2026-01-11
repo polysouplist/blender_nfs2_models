@@ -327,7 +327,7 @@ def register():
 	bpy.types.Mesh.flip_normal = bpy.props.BoolProperty(name="flip_normal", description="Flip normal? Used on faces with an inverted normal vector", default=False, get=get_int_flip_normal, set=set_int_flip_normal)
 	bpy.types.Mesh.alpha_clip = bpy.props.BoolProperty(name="alpha_clip", description="Alpha clip? Used on faces to determine binary opacity in software mode", default=False, get=get_int_alpha_clip, set=set_int_alpha_clip)
 	bpy.types.Mesh.double_sided = bpy.props.BoolProperty(name="double_sided", description="Double sided? Used on faces that are visible from both sides", default=False, get=get_int_double_sided, set=set_int_double_sided)
-	bpy.types.Mesh.unknown = bpy.props.BoolProperty(name="unknown", description="Unknown? Unknown", default=False, get=get_int_unknown, set=set_int_unknown)
+	bpy.types.Mesh.unknown = bpy.props.BoolProperty(name="unknown", description="Unknown? Unknown usage", default=False, get=get_int_unknown, set=set_int_unknown)
 	bpy.types.Mesh.brake_light = bpy.props.BoolProperty(name="brake_light", description="Brake light? Used on faces with a brake light texture", default=False, get=get_int_brake_light, set=set_int_brake_light)
 	bpy.types.Mesh.is_wheel = bpy.props.BoolProperty(name="is_wheel", description="Is wheel? Used on faces with a wheel texture", default=False, get=get_int_is_wheel, set=set_int_is_wheel)
 
