@@ -34,6 +34,7 @@ from bpy_extras.io_utils import (
 	axis_conversion,
 )
 import bmesh
+import binascii
 import math
 from mathutils import Matrix
 import os
@@ -75,7 +76,7 @@ def import_nfs2_models(context, file_path, clear_scene, m):
 		for index in range(32):
 			vertices = []
 			faces = []
-			additional_data = []
+			offset = []
 			
 			geoPartName = get_geoPartNames(index)
 			num_vrtx = struct.unpack('<I', f.read(0x4))[0]
@@ -94,7 +95,7 @@ def import_nfs2_models(context, file_path, clear_scene, m):
 				vertex = [vertex[0]/256, vertex[1]/256, vertex[2]/256]
 				vertices.append ((vertex[0], vertex[1], vertex[2]))
 			if num_vrtx % 2 == 1:	#Data offset, happens when num_vrtx is odd
-				additional_data = f.read(0x6)
+				offset = f.read(0x6)
 			
 			for i in range(num_plgn):
 				mapping = mapping_decode(f.read(0x1), "little")
@@ -190,8 +191,8 @@ def import_nfs2_models(context, file_path, clear_scene, m):
 				bm.to_mesh(me_ob)
 				bm.free()
 				
-				if additional_data:
-					me_ob["additional_data"] = additional_data
+				if offset:
+					me_ob["offset"] = bytes_to_id(offset)
 				obj["object_index"] = index
 				obj["object_unk0"] = int_to_id(object_unk0)
 				obj["object_unk1"] = int_to_id(object_unk1)
@@ -278,6 +279,14 @@ def mapping_decode(mapping, endian):
 	mapping = [(name, value) for name, value in zip(mapping_names, mapping_values)]
 	
 	return(mapping)
+
+
+def bytes_to_id(id):
+	id = binascii.hexlify(id)
+	id = str(id,'ascii')
+	id = id.upper()
+	id = '_'.join([id[x : x+2] for x in range(0, len(id), 2)])
+	return id
 
 
 def int_to_id(id):
