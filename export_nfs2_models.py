@@ -115,12 +115,14 @@ def main(context, export_path, m):
 				object_unk3 = 1	#Always == 0x1
 				object_unk4 = 1	#Always == 0x1
 				
-				try:
-					mesh = object.data
-					offset = mesh["offset"]
-					offset = id_to_bytes(offset)
-				except:
-					offset = (b'\x00' * 0x6)
+				offset = []
+				if num_vrtx % 2 == 1:
+					try:
+						mesh = object.data
+						offset = mesh["offset"]
+						offset = id_to_bytes(offset)
+					except:
+						offset = (b'\x00' * 0x6)
 				
 				GeoMesh = [num_vrtx, num_plgn, pos, object_unk0, object_unk1, object_unk2, object_unk3, object_unk4, vertices, offset, polygons]			
 			else:
