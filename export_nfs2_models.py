@@ -207,13 +207,13 @@ def read_object(object):
 				except:
 					vertex_indices = [vertex_indices[0], vertex_indices[1], vertex_indices[2], vertex_indices[3]]
 			
-			if None in [uv_flip, alpha_clip, double_sided, unknown, brake_light, is_wheel]:
-				try:
-					mapping = (is_triangle, False, face[flip_normal], False, False, False, False, False)
-				except:
-					mapping = (is_triangle, False, False, False, False, False, False, False)
+			if None in [uv_flip, flip_normal, alpha_clip, double_sided, unknown, brake_light, is_wheel]:
+				print("ERROR: face without mapping found on mesh %s." % mesh.name)
+				return (num_vrtx, num_plgn, vertices, polygons, 1)
 			else:
 				mapping = [is_triangle, face[uv_flip], face[flip_normal], face[alpha_clip], face[double_sided], face[unknown], face[brake_light], face[is_wheel]]
+			
+			mapping = mapping_encode(mapping, "little")
 			
 			try:
 				unk0 = face[face_unk0].to_bytes(3, "little")
@@ -269,16 +269,14 @@ def write_GeoMesh(f, GeoMesh):
 	f.write(struct.pack('<Q', unk3))
 	f.write(struct.pack('<Q', unk4))
 	
-	if num_vrtx > 0:
-		for i in range(0, num_vrtx):
-			f.write(struct.pack('<3h', *vertices[i]))
-		if num_vrtx % 2 == 1:	#Data offset, happens when num_vrtx is odd
-			f.write(offset)
+	for i in range(0, num_vrtx):
+		f.write(struct.pack('<3h', *vertices[i]))
+	if num_vrtx % 2 == 1:	#Data offset, happens when num_vrtx is odd
+		f.write(offset)
 	
-	if num_plgn > 0:
-		for i in range(0, num_plgn):
-			GeoPolygon = polygons[i]
-			write_GeoPolygon(f, GeoPolygon)
+	for i in range(0, num_plgn):
+		GeoPolygon = polygons[i]
+		write_GeoPolygon(f, GeoPolygon)
 	
 	return 0
 
@@ -286,7 +284,6 @@ def write_GeoMesh(f, GeoMesh):
 def write_GeoPolygon(f, GeoPolygon):
 	mapping, unk0, vertex_indices, texture_name = GeoPolygon
 	
-	mapping = mapping_encode(mapping, "little")
 	f.write(mapping)
 	f.write(unk0)
 	f.write(struct.pack('<4B', *vertex_indices))
