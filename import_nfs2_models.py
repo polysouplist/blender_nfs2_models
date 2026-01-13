@@ -151,10 +151,10 @@ def read_GeoMesh(f):
 	unk4 = struct.unpack('<Q', f.read(0x8))[0]	#Always == 0x1
 	
 	vert_scale = 256
-	for i in range (num_vrtx):
+	for i in range(num_vrtx):
 		vertex = struct.unpack('<3h', f.read(0x6))
 		vertex = [vertex[0]/vert_scale, vertex[1]/vert_scale, vertex[2]/vert_scale]
-		vertices.append ((vertex[0], vertex[1], vertex[2]))
+		vertices.append((vertex[0], vertex[1], vertex[2]))
 	if num_vrtx % 2 == 1:	#Data offset, happens when num_vrtx is odd
 		offset = f.read(0x6)
 	
