@@ -135,9 +135,9 @@ def main(context, export_path, m):
 		## Writing data
 		print("\tWriting data...")
 		writing_time = time.time()
-
+		
 		write_GeoGeometry(file_path, GeoGeometry)
-
+		
 		elapsed_time = time.time() - writing_time
 		print("\t... %.4fs" % elapsed_time)	
 	
