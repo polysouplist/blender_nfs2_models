@@ -39,6 +39,11 @@ import struct
 import numpy as np
 
 
+# Global variables
+POS_SCALE = 65536
+VERT_SCALE = 256
+
+
 def main(context, export_path, m):
 	os.system('cls')
 	start_time = time.time()
@@ -95,10 +100,9 @@ def main(context, export_path, m):
 				if status == 1:
 					return {'CANCELLED'}
 				
-				pos_scale = 65536
 				pos = Matrix(np.linalg.inv(m) @ object.matrix_world)
 				pos = pos.to_translation()
-				pos = [round(pos[0]*pos_scale), round(pos[1]*pos_scale), round(pos[2]*pos_scale)]
+				pos = [round(pos[0]*POS_SCALE), round(pos[1]*POS_SCALE), round(pos[2]*POS_SCALE)]
 				
 				try:
 					object_unk0 = id_to_int(object["object_unk0"])
@@ -148,21 +152,27 @@ def main(context, export_path, m):
 
 
 def read_object(object):
-	num_vrtx = 0
-	num_plgn = 0
 	vertices = []
 	polygons = []
+	vertices_list = {}
+	vert_ind = 0
 	
 	# Inits
 	mesh = object.data
 	bm = bmesh.new()
 	bm.from_mesh(mesh)
 	
-	vert_scale = 256
 	for vert in bm.verts:
 		if vert.hide == False:
-			vertices.append([round(vert_co*vert_scale) for i, vert_co in enumerate(vert.co)])
-			num_vrtx += 1
+			vertices.append([round(vert_co*VERT_SCALE) for i, vert_co in enumerate(vert.co)])
+			vertices_list[vert.index] = vert_ind
+			vert_ind += 1
+	
+	if len(vertices) > 0xFFFFFFFF:
+		print("ERROR: number of vertices higher than the supported by the game on mesh %s." % mesh.name)
+		return (num_vrtx, num_plgn, vertices, polygons, 1)
+	
+	num_vrtx = len(vertices)
 	
 	face_unk0 = bm.faces.layers.int.get("face_unk0")
 	#is_triangle = bm.faces.layers.int.get("is_triangle")
@@ -182,7 +192,7 @@ def read_object(object):
 			
 			vertex_indices = []
 			for vert in face.verts:
-				vert_index = vert.index
+				vert_index = vertices_list[vert.index]
 				if vert_index > 0xFF:
 					print("ERROR: vertex index forming face higher than the supported by the game on mesh %s. It cannot be above 255." % mesh.name)
 					return (num_vrtx, num_plgn, vertices, polygons, 1)
@@ -232,7 +242,12 @@ def read_object(object):
 			texture_name = (material_name[:4].encode('ascii'))
 			
 			polygons.append([mapping, unk0, vertex_indices, texture_name])
-			num_plgn += 1
+	
+	if len(polygons) > 0xFFFFFFFF:
+		print("ERROR: number of faces higher than the supported by the game on mesh %s." % mesh.name)
+		return (num_vrtx, num_plgn, vertices, polygons, 1)
+	
+	num_plgn = len(polygons)
 	
 	bm.clear()
 	bm.free()
