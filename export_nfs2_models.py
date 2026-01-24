@@ -152,6 +152,8 @@ def main(context, export_path, m):
 
 
 def read_object(object):
+	num_vrtx = 0
+	num_plgn = 0
 	vertices = []
 	polygons = []
 	vertices_list = {}
