@@ -42,6 +42,11 @@ import time
 import struct
 
 
+# Global variables
+POS_SCALE = 65536
+VERT_SCALE = 256
+
+
 def main(context, file_path, clear_scene, global_matrix):
 	if bpy.ops.object.mode_set.poll():
 		bpy.ops.object.mode_set(mode='OBJECT')
@@ -140,9 +145,8 @@ def read_GeoMesh(f):
 	num_vrtx = struct.unpack('<I', f.read(0x4))[0]
 	num_plgn = struct.unpack('<I', f.read(0x4))[0]
 	
-	pos_scale = 65536
 	pos = struct.unpack('<3i', f.read(0xC))
-	pos = [pos[0]/pos_scale, pos[1]/pos_scale, pos[2]/pos_scale]
+	pos = [pos[0]/POS_SCALE, pos[1]/POS_SCALE, pos[2]/POS_SCALE]
 	
 	unk0 = struct.unpack('<I', f.read(0x4))[0]
 	unk1 = struct.unpack('<I', f.read(0x4))[0]
@@ -150,10 +154,9 @@ def read_GeoMesh(f):
 	unk3 = struct.unpack('<Q', f.read(0x8))[0]	#Always == 0x1
 	unk4 = struct.unpack('<Q', f.read(0x8))[0]	#Always == 0x1
 	
-	vert_scale = 256
 	for i in range(num_vrtx):
 		vertex = struct.unpack('<3h', f.read(0x6))
-		vertex = [vertex[0]/vert_scale, vertex[1]/vert_scale, vertex[2]/vert_scale]
+		vertex = [vertex[0]/VERT_SCALE, vertex[1]/VERT_SCALE, vertex[2]/VERT_SCALE]
 		vertices.append((vertex[0], vertex[1], vertex[2]))
 	if num_vrtx % 2 == 1:	#Data offset, happens when num_vrtx is odd
 		offset = f.read(0x6)
