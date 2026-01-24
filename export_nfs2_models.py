@@ -285,7 +285,11 @@ def write_GeoMesh(f, GeoMesh):
 	f.write(struct.pack('<Q', unk4))
 	
 	for i in range(0, num_vrtx):
-		f.write(struct.pack('<3h', *vertices[i]))
+		try:
+			f.write(struct.pack('<3h', *vertices[i]))
+		except:
+			#print("ERROR: vertex coordinate higher than the maximum allowed. Writing zeros.")
+			f.write(struct.pack("<3h", 0, 0, 0))
 	if num_vrtx % 2 == 1:	#Data offset, happens when num_vrtx is odd
 		f.write(offset)
 	
