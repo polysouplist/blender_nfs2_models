@@ -22,8 +22,7 @@ import bpy
 from bpy.types import Operator
 from bpy.props import (
 	StringProperty,
-	BoolProperty,
-	EnumProperty
+	BoolProperty
 )
 from bpy_extras.io_utils import (
 	ExportHelper,
